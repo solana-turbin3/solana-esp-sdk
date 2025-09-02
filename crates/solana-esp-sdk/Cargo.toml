@@ -1,0 +1,39 @@
+[package]
+name = "solana-esp-sdk"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Lightweight no_std Solana client for ESP (esp-hal)"
+
+
+[lib]
+crate-type = ["rlib"]
+
+
+[features]
+# Default is no_std with crypto enabled (can be disabled for bare-metal demos)
+default = ["crypto"]
+# Enable std for host-side testing and the host-demo example.
+std = ["dep:bs58", "dep:ureq"]
+# Optional TLS / RPC helpers (off by default for minimal size)
+tls = []
+# Optional SPL-Token helpers
+spl-token = []
+crypto = ["dep:ed25519-compact"]
+
+
+[dependencies]
+base64 = { workspace = true }
+ed25519-compact = { workspace = true, default-features = false, optional = true }
+rand_core = { workspace = true }
+heapless = { workspace = true }
+bs58 = { version = "0.5", optional = true }
+ureq = { version = "2", optional = true }
+
+
+[dev-dependencies]
+# (none for now)
+
+
+[package.metadata.docs.rs]
+features = ["std"]
