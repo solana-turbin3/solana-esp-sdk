@@ -86,9 +86,14 @@ async fn main(spawner: Spawner) {
     stack.wait_config_up().await;
     println!("net: up");
 
-    // Demo loop (placeholder)
+    // Demo loop: print assigned IPv4 address periodically
     loop {
-        println!("tick");
+        if let Some(config) = stack.config_v4() {
+            let ipv4 = config.address.address();
+            println!("ip: {}", ipv4);
+        } else {
+            println!("ip: (not configured)");
+        }
         Timer::after(Duration::from_secs(2)).await;
     }
 
