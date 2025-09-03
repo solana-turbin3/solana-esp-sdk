@@ -39,9 +39,12 @@ cargo +esp run -p esp32s3-demo --release
 
 
 ### Examples
-- **host-demo (std)**: smoke test against Solana devnet.
 - **esp32s3-demo (no_std)**: embedded Wi‑Fi + `RpcClient` integration skeleton.
 
+### Other Resources for inspiration
+- [Espressif docks on using core (no_std)](https://docs.espressif.com/projects/rust/book/overview/using-the-core-library.html)
+- [Unruggable - Solana on ESP32 repo](https://github.com/hogyzen12/unruggable-rust-esp32/tree/master)
+- [Mantistc - Solana data display on ESP32, written in rust](https://github.com/Mantistc/esp32-ssd1306-solana)
 
 ### How to contribute
 We’re developing this SDK incrementally with small, composable modules. See `tasks.md` for milestones and current priorities. High‑impact areas where contributions are welcome:
@@ -50,11 +53,7 @@ We’re developing this SDK incrementally with small, composable modules. See `t
   - Implement message and transaction serialization to exact Solana format.
   - Add unit tests (std-only) that compare bytes with the official SDK.
 
-- **Host RPC happy path (`std`)**
-  - Implement `get_latest_blockhash`, `send_transaction_base64`, and parsing helpers in `solana-esp-sdk/src/rpc.rs`.
-  - Use `serde_json` and `bs58` behind the `std` feature.
-
-- **Embedded networking (`no_std`)**
+- **Embedded networking**
   - Bring up Wi‑Fi on ESP32‑S3 using `esp-hal` + `esp-wifi`.
   - Implement a minimal HTTP POST client (manual, `smoltcp`, or `reqwless`) and an `RpcClient` adapter in `solana-esp-sdk/src/net.rs`.
 
