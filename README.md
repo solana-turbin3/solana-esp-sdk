@@ -42,7 +42,7 @@ cargo +esp run -p esp32s3-demo --release
 - **esp32s3-demo (no_std)**: embedded Wi‑Fi + `RpcClient` integration skeleton.
 
 ### Other Resources for inspiration
-- [Espressif docks on using core (no_std)](https://docs.espressif.com/projects/rust/book/overview/using-the-core-library.html)
+- [Espressif docs on using core (no_std)](https://docs.espressif.com/projects/rust/book/overview/using-the-core-library.html)
 - [Unruggable - Solana on ESP32 repo](https://github.com/hogyzen12/unruggable-rust-esp32/tree/master)
 - [Mantistc - Solana data display on ESP32, written in rust](https://github.com/Mantistc/esp32-ssd1306-solana)
 
