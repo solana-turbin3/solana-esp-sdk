@@ -1,7 +1,8 @@
 [workspace]
 members = [
-"solana-esp-sdk",
-"examples/esp32s3-demo",
+    "solana-esp-sdk",
+    "examples/esp32s3-demo",
+    "examples/esp32-get-latest-blockhash-async",
 ]
 resolver = "2"
 
@@ -15,5 +16,5 @@ license = "Apache-2.0"
 # Centralised versions for crates currently used by the SDK
 solana-program = { version = "1.18", default-features = false }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
-ed25519-compact = "2.1.1"
+ed25519-compact = { version = "2.1.1", default-features = false }
 rand_core = { version = "0.6", default-features = false }

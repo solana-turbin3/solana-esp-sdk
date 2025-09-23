@@ -19,6 +19,8 @@ compile_error!("feature `tx` requires `instr` (instruction builders) to be enabl
 
 pub mod types;
 
+pub mod hash;
+
 // Optional lightweight codecs (uleb128, base64, optional base58/json)
 #[cfg(feature = "codecs")]
 #[cfg_attr(docsrs, doc(cfg(feature = "codecs")))]
@@ -63,7 +65,6 @@ pub mod transaction;
 */
 // ─────────────────────────────────────────────────────────────
 
-#[cfg(feature = "rpc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rpc")))]
 pub mod rpc;
 
