@@ -65,6 +65,7 @@ pub mod transaction;
 */
 // ─────────────────────────────────────────────────────────────
 
+// #[cfg(feature = "rpc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rpc")))]
 pub mod rpc;
 
@@ -116,7 +117,7 @@ pub mod prelude {
     pub use crate::transaction::*;
 
     // RPC trait + helpers
-    #[cfg(feature = "rpc")]
+    // #[cfg(feature = "rpc")]
     #[cfg_attr(docsrs, doc(cfg(feature = "rpc")))]
     pub use crate::rpc::*;
 

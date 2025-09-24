@@ -19,14 +19,12 @@ use esp_println as _;
 use esp_println::println; //
 use esp_wifi::wifi::{self, WifiController, WifiDevice, WifiEvent, WifiState}; //
 use esp_wifi::EspWifiController; //
-use reqwless::client::{HttpClient, TlsConfig};
-use reqwless::headers::ContentType;
-use reqwless::request::RequestBuilder;
 use solana_esp_sdk::net::ReqwlessAsyncClient;
 use solana_esp_sdk::rpc::RpcClient; //
 
 #[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!("Panic! {:?}", info);
     loop {}
 }
 
@@ -106,7 +104,7 @@ async fn main(spawner: Spawner) {
     loop {
         let hash = rpc.get_latest_blockhash().await.unwrap();
         println!("Latest blockhash: {}", hash);
-        Timer::after(Duration::from_millis(1000)).await;
+        // Timer::after(Duration::from_millis(1000)).await;
     }
 
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0-rc.0/examples/src/bin

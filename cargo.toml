@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "solana-esp-sdk",
-    "examples/esp32s3-demo",
+    # "examples/esp32s3-demo",
     "examples/esp32-get-latest-blockhash-async",
 ]
 resolver = "2"
@@ -18,3 +18,17 @@ solana-program = { version = "1.18", default-features = false }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 ed25519-compact = { version = "2.1.1", default-features = false }
 rand_core = { version = "0.6", default-features = false }
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1        # LLVM can perform better optimizations using a single thread
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false

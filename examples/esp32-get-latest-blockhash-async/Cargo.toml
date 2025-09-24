@@ -67,16 +67,16 @@ solana-esp-sdk = { path = "../../solana-esp-sdk", default-features = false, feat
 [build-dependencies]
 dotenv-build = "0.1"
 
-[profile.dev]
-# Rust debug is too slow.
-# For debug builds always builds with some optimization
-opt-level = "s"
+# [profile.dev]
+# # Rust debug is too slow.
+# # For debug builds always builds with some optimization
+# opt-level = "s"
 
-[profile.release]
-codegen-units = 1        # LLVM can perform better optimizations using a single thread
-debug = 2
-debug-assertions = false
-incremental = false
-lto = 'fat'
-opt-level = 's'
-overflow-checks = false
+# [profile.release]
+# codegen-units = 1        # LLVM can perform better optimizations using a single thread
+# debug = 2
+# debug-assertions = false
+# incremental = false
+# lto = 'fat'
+# opt-level = 's'
+# overflow-checks = false

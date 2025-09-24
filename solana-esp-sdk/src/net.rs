@@ -22,6 +22,7 @@ where
     pub tls_seed: u64,
 }
 
+#[cfg(feature = "net-reqwless")]
 impl<T, D> AsyncClient for ReqwlessAsyncClient<T, D>
 where
     T: TcpConnect,
@@ -53,6 +54,7 @@ where
     }
 }
 
+/*
 /// A smoltcp + manual HTTP/1.1 POST client for ultra-small builds.
 #[cfg(feature = "net-smoltcp")]
 pub struct SmolHttpClient {/* socket refs, buffers */}
@@ -63,3 +65,4 @@ impl RpcClient for SmolHttpClient {
         /* TODO */
     }
 }
+*/
