@@ -12,22 +12,14 @@ use crate::types::{Result, SdkError};
 
 /// A reqwless-based RpcAsyncClient (no_std HTTP client for embedded).
 #[cfg(feature = "net-reqwless")]
-pub struct ReqwlessAsyncClient<T, D>
-where
-    T: TcpConnect,
-    D: Dns,
-{
+pub struct ReqwlessAsyncClient<T: TcpConnect, D: Dns> {
     pub tcp: T,
     pub dns: D,
     pub tls_seed: u64,
 }
 
 #[cfg(feature = "net-reqwless")]
-impl<T, D> AsyncClient for ReqwlessAsyncClient<T, D>
-where
-    T: TcpConnect,
-    D: Dns,
-{
+impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
     async fn post_json<'a>(&self, url: &str, json_body: &[u8]) -> Result<alloc::vec::Vec<u8>> {
         let mut rx_buffer = [0; 4096];
         let mut tx_buffer = [0; 4096];
@@ -44,12 +36,19 @@ where
         let mut http_req = client
             .request(reqwless::request::Method::POST, url)
             .await
-            .unwrap()
+            .map_err(|_| SdkError::NetworkError)?
             .body(json_body)
             .content_type(ContentType::ApplicationJson);
-        let response = http_req.send(&mut buffer).await.unwrap();
+        let response = http_req
+            .send(&mut buffer)
+            .await
+            .map_err(|_| SdkError::NetworkError)?;
 
-        let res = response.body().read_to_end().await.unwrap();
+        let res = response
+            .body()
+            .read_to_end()
+            .await
+            .map_err(|_| SdkError::NetworkError)?;
         Ok(res.to_vec())
     }
 }

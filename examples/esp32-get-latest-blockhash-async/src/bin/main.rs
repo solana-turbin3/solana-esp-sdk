@@ -102,7 +102,15 @@ async fn main(spawner: Spawner) {
     );
 
     loop {
-        let hash = rpc.get_latest_blockhash().await.unwrap();
+        let hash = rpc.get_latest_blockhash().await;
+        let hash = match hash {
+            Ok(hash) => hash,
+            Err(e) => {
+                println!("Error: {:?}", e);
+                Timer::after(Duration::from_millis(1000)).await;
+                continue;
+            }
+        };
         println!("Latest blockhash: {}", hash);
         // Timer::after(Duration::from_millis(1000)).await;
     }

@@ -3,12 +3,13 @@
 pub enum SdkError {
     Crypto,
     Rpc,
-    Network,
     Serialize,
     Deserialize,
     Invalid,
     Timeout,
     Unsupported,
+    NetworkError,
+    ResponseParseError,
 }
 
 pub type Result<T> = core::result::Result<T, SdkError>;

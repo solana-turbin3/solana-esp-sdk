@@ -15,7 +15,11 @@ pub trait SyncClient {
 /// Implementations perform a async POST of raw JSON and return response.
 pub trait AsyncClient {
     // async fn post_json<'a>(&self, url: &str, json_body: &[u8]) -> Result<alloc::vec::Vec<u8>>;
-    fn post_json<'a>(&self, url: &str, json_body: &[u8]) -> impl Future<Output = Result<alloc::vec::Vec<u8>>>;
+    fn post_json<'a>(
+        &self,
+        url: &str,
+        json_body: &[u8],
+    ) -> impl Future<Output = Result<alloc::vec::Vec<u8>>>;
 }
 
 pub enum Commitment {
@@ -56,22 +60,28 @@ impl<'a, C> RpcClient<'a, C> {
         }
     }
 
-    fn extract_blockhash(json: &[u8]) -> Option<Hash> {
+    fn extract_blockhash(json: &[u8]) -> Result<Hash> {
         // Step 1: Find the `"blockhash":"` prefix
-        let blockhash_prefix = b"\"blockhash\":\"";
+        let blockhash_prefix = br#""blockhash":""#;
         let start = json
             .windows(blockhash_prefix.len())
-            .position(|w| w == blockhash_prefix)?
+            .position(|w| w == blockhash_prefix)
+            .ok_or(SdkError::ResponseParseError)?
             + blockhash_prefix.len();
 
         // Step 2: Extract the blockhash (ends with `"`)
-        let end = json[start..].iter().position(|&c| c == b'"')? + start;
+        let end = json[start..]
+            .iter()
+            .position(|&c| c == b'"')
+            .ok_or(SdkError::ResponseParseError)?
+            + start;
 
         // Step 3: Return the slice as a str
         // Hash::from_str(&json[start..end]).ok()
         let mut hash_bytes = [0u8; 32];
-        five8::decode_32(&json[start..end], &mut hash_bytes).unwrap(); // TODO: Propagate error
-        Some(Hash::from(hash_bytes))
+        five8::decode_32(&json[start..end], &mut hash_bytes)
+            .map_err(|_| SdkError::ResponseParseError)?;
+        Ok(Hash::from(hash_bytes))
     }
 }
 
@@ -86,7 +96,7 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
             .client
             .post_json(self.url, json_body.as_slice())
             .await?;
-        let hash = Self::extract_blockhash(&reponse).unwrap(); // TODO: Propagate error
+        let hash = Self::extract_blockhash(&reponse)?;
         Ok(hash)
     }
 }
