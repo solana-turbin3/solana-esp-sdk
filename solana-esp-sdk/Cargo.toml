@@ -12,7 +12,7 @@ crate-type = ["rlib"]
 
 [features]
 # Default to minimal `no_std` (no features enabled)
-default = ["net-reqwless"]
+default = ["net-reqwless", "crypto"]
 # Enable std for host-side testing and the host-demo example.
 std = ["dep:bs58", "dep:ureq"]
 # Optional TLS / RPC helpers (off by default for minimal size)
