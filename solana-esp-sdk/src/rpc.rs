@@ -8,18 +8,30 @@ use crate::{
 /// Transport-agnostic RPC trait. Implement this on host or embedded.
 /// Implementations perform a blocking POST of raw JSON and return UTF-8 response.
 pub trait SyncClient {
-    fn post_json(&self, url: &str, json_body: &str) -> Result<alloc::vec::Vec<u8>>;
+    // fn post_json(&self, url: &str, json_body: &str) -> Result<alloc::vec::Vec<u8>>;
+    fn post_json<'a>(
+        &self,
+        url: &str,
+        json_body: &[u8],
+        resp_buffer: &'a mut [u8],
+    ) -> Result<&'a [u8]>;
 }
 
 /// Transport-agnostic async RPC trait. Implement this on host or embedded.
 /// Implementations perform a async POST of raw JSON and return response.
 pub trait AsyncClient {
     // async fn post_json<'a>(&self, url: &str, json_body: &[u8]) -> Result<alloc::vec::Vec<u8>>;
+    // fn post_json<'a>(
+    //     &self,
+    //     url: &str,
+    //     json_body: &[u8],
+    // ) -> impl Future<Output = Result<alloc::vec::Vec<u8>>>;
     fn post_json<'a>(
         &self,
         url: &str,
         json_body: &[u8],
-    ) -> impl Future<Output = Result<alloc::vec::Vec<u8>>>;
+        resp_buffer: &'a mut [u8],
+    ) -> impl Future<Output = Result<&'a [u8]>>;
 }
 
 pub enum Commitment {
@@ -92,9 +104,10 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
             Commitment::Confirmed => br#"{"jsonrpc":"2.0","id":1,"method":"getLatestBlockhash","params":[{"commitment": "confirmed"}]}"#,
             Commitment::Finalized => br#"{"jsonrpc":"2.0","id":1,"method":"getLatestBlockhash","params":[{"commitment": "finalized"}]}"#,
         };
+        let mut resp_buffer = [0u8; 4096];
         let reponse = self
             .client
-            .post_json(self.url, json_body.as_slice())
+            .post_json(self.url, json_body.as_slice(), resp_buffer.as_mut_slice())
             .await?;
         let hash = Self::extract_blockhash(&reponse)?;
         Ok(hash)
@@ -116,7 +129,7 @@ impl<'a, C: SyncClient> Rpc<'a, C> {
     pub fn get_account_info_raw(&self, pubkey_b58: &str) -> Result<alloc::string::String> { /* TODO */ }
 }
 */
-
+/*
 /// Build the JSON for getLatestBlockhash (optionally with a commitment param).
 // pub fn json_get_latest_blockhash() -> alloc::string::String { /* TODO */
 // }
@@ -139,3 +152,4 @@ pub fn parse_blockhash_from_response(json: &str) -> Result<solana_program::hash:
 #[cfg(feature = "std")]
 pub fn parse_balance_from_response(json: &str) -> Result<u64> { /* TODO */
 }
+ */

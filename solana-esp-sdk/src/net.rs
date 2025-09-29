@@ -20,7 +20,7 @@ pub struct ReqwlessAsyncClient<T: TcpConnect, D: Dns> {
 
 #[cfg(feature = "net-reqwless")]
 impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
-    async fn post_json<'a>(&self, url: &str, json_body: &[u8]) -> Result<alloc::vec::Vec<u8>> {
+    async fn post_json<'a>(&self, url: &str, json_body: &[u8], resp_buffer: &'a mut [u8]) -> Result<&'a [u8]> {
         let mut rx_buffer = [0; 4096];
         let mut tx_buffer = [0; 4096];
 
@@ -32,7 +32,6 @@ impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
         );
 
         let mut client = HttpClient::new_with_tls(&self.tcp, &self.dns, tls);
-        let mut buffer = [0u8; 4096];
         let mut http_req = client
             .request(reqwless::request::Method::POST, url)
             .await
@@ -40,7 +39,7 @@ impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
             .body(json_body)
             .content_type(ContentType::ApplicationJson);
         let response = http_req
-            .send(&mut buffer)
+            .send(resp_buffer)
             .await
             .map_err(|_| SdkError::NetworkError)?;
 
@@ -49,7 +48,7 @@ impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
             .read_to_end()
             .await
             .map_err(|_| SdkError::NetworkError)?;
-        Ok(res.to_vec())
+        Ok(res)
     }
 }
 
