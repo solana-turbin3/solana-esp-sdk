@@ -13,6 +13,7 @@ use embassy_net::tcp::client::{TcpClient, TcpClientState}; //
 use embassy_net::{DhcpConfig, Runner, Stack, StackResources}; //
 use embassy_time::{Duration, Timer};
 use esp_hal::clock::CpuClock;
+use esp_hal::gpio::{Level, Output, OutputConfig};
 use esp_hal::rng::Rng; //
 use esp_hal::timer::timg::TimerGroup;
 use esp_println as _;
@@ -92,16 +93,19 @@ async fn main(spawner: Spawner) {
     wait_for_connection(stack).await;
 
     let tcp_state = TcpClientState::<1, 4096, 4096>::new();
-    let tcp = TcpClient::new(stack, &tcp_state);
+    let mut tcp = TcpClient::new(stack, &tcp_state);
+    tcp.set_timeout(Some(Duration::from_secs(2)));
     let dns = DnsSocket::new(stack);
     let async_client = ReqwlessAsyncClient { tcp, dns, tls_seed };
     let rpc = RpcClient::new_async(
-        "https://api.devnet.solana.com",
+        "http://api.devnet.solana.com",
         solana_esp_sdk::rpc::Commitment::Confirmed,
         async_client,
     );
-
+    let mut counter: u64 = 0;
+    let mut led = Output::new(peripherals.GPIO2, Level::High, OutputConfig::default());
     loop {
+        led.toggle();
         let hash = rpc.get_latest_blockhash().await;
         let hash = match hash {
             Ok(hash) => hash,
@@ -111,7 +115,8 @@ async fn main(spawner: Spawner) {
                 continue;
             }
         };
-        println!("Latest blockhash: {}", hash);
+        println!("Latest blockhash: {}, {}", hash, counter);
+        counter += 1;
         // Timer::after(Duration::from_millis(1000)).await;
     }
 
