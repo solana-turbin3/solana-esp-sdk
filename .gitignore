@@ -11,3 +11,4 @@ target/
 *.pdb
 
 .env
+private_key.txt

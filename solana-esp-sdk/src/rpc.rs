@@ -1,7 +1,12 @@
 use core::future::Future;
 
+use base64::Engine;
+
 use crate::{
+    crypto::Pubkey,
     hash::Hash,
+    signature::Signature,
+    transaction::Transaction,
     types::{Result, SdkError},
 };
 
@@ -88,12 +93,29 @@ impl<'a, C> RpcClient<'a, C> {
             .ok_or(SdkError::ResponseParseError)?
             + start;
 
-        // Step 3: Return the slice as a str
-        // Hash::from_str(&json[start..end]).ok()
+        // Step 3: Decode the blockhash
         let mut hash_bytes = [0u8; 32];
         five8::decode_32(&json[start..end], &mut hash_bytes)
             .map_err(|_| SdkError::ResponseParseError)?;
         Ok(Hash::from(hash_bytes))
+    }
+
+    fn extract_signature(json: &[u8]) -> Result<Signature> {
+        let result_prefix = br#""result":""#;
+        let start = json
+            .windows(result_prefix.len())
+            .position(|w| w == result_prefix)
+            .ok_or(SdkError::ResponseParseError)?
+            + result_prefix.len();
+        let end = json[start..]
+            .iter()
+            .position(|&c| c == b'"')
+            .ok_or(SdkError::ResponseParseError)?
+            + start;
+        let mut sig_bytes = [0u8; 64];
+        five8::decode_64(&json[start..end], &mut sig_bytes)
+            .map_err(|_| SdkError::ResponseParseError)?;
+        Ok(Signature::from(sig_bytes))
     }
 }
 
@@ -109,8 +131,202 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
             .client
             .post_json(self.url, json_body.as_slice(), resp_buffer.as_mut_slice())
             .await?;
-        let hash = Self::extract_blockhash(&reponse)?;
-        Ok(hash)
+        Self::extract_blockhash(&reponse)
+    }
+
+    pub async fn send_transaction(
+        &self,
+        transaction: &Transaction<'_, '_, '_, '_, '_, '_, '_, '_>,
+    ) -> Result<Signature> {
+        struct KeyMetadata {
+            pub is_signer: bool,
+            pub is_writable: bool,
+        }
+
+        // get map of all accounts
+        let mut keys_meta_map: heapless::LinearMap<&Pubkey, KeyMetadata, 35> =
+            heapless::LinearMap::new();
+        for instruction in transaction.instructions.iter() {
+            // program cannot be writable or signer so it is safe to overwrite
+            let _ = keys_meta_map.insert(
+                &instruction.program_id,
+                KeyMetadata {
+                    is_signer: false,
+                    is_writable: false,
+                },
+            );
+            for account_meta in instruction.accounts.iter() {
+                let key_meta = keys_meta_map.get_mut(account_meta.pubkey);
+                if let Some(key_meta) = key_meta {
+                    key_meta.is_writable |= account_meta.is_writable;
+                    key_meta.is_signer |= account_meta.is_signer;
+                    continue;
+                }
+                let _ = keys_meta_map.insert(
+                    account_meta.pubkey,
+                    KeyMetadata {
+                        is_signer: account_meta.is_signer,
+                        is_writable: account_meta.is_writable,
+                    },
+                );
+            }
+        }
+
+        let mut writable_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+        let mut readonly_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+        let mut writable_non_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+        let mut readonly_non_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+        let mut static_account_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+
+        for (key, meta) in keys_meta_map.iter() {
+            if meta.is_writable {
+                if meta.is_signer {
+                    let _ = writable_signer_keys.push(*key);
+                } else {
+                    let _ = writable_non_signer_keys.push(*key).ok();
+                }
+            } else {
+                if meta.is_signer {
+                    let _ = readonly_signer_keys.push(*key).ok();
+                } else {
+                    let _ = readonly_non_signer_keys.push(*key).ok();
+                }
+            }
+        }
+        let num_required_signatures: u8 =
+            (writable_signer_keys.len() + readonly_signer_keys.len()) as u8;
+        let num_readonly_signed_accounts: u8 = readonly_signer_keys.len() as u8;
+        let num_readonly_unsigned_accounts: u8 = readonly_non_signer_keys.len() as u8;
+        static_account_keys.extend(writable_signer_keys.into_iter());
+        static_account_keys.extend(readonly_signer_keys.into_iter());
+        static_account_keys.extend(writable_non_signer_keys.into_iter());
+        static_account_keys.extend(readonly_non_signer_keys.into_iter());
+
+        // build message
+        let mut msg_buffer: heapless::Vec<u8, 1200> = heapless::Vec::new(); // can be smaller
+
+        // SAFETY: msg_buffer is empty and has enough space
+        unsafe {
+            msg_buffer.push_unchecked(num_required_signatures);
+            msg_buffer.push_unchecked(num_readonly_signed_accounts);
+            msg_buffer.push_unchecked(num_readonly_unsigned_accounts);
+            // number of accounts is less then 128, so 1 byte is enough
+            msg_buffer.push_unchecked(static_account_keys.len() as u8);
+        };
+
+        for key in static_account_keys.iter() {
+            // Result is always Ok because msg_buffer has enough space
+            let _ = msg_buffer.extend_from_slice(key.as_ref());
+        }
+
+        // Result is always Ok because msg_buffer has enough space
+        let _ = msg_buffer.extend_from_slice(transaction.recent_blockhash.as_ref());
+
+        // number of instructions is less then 128, so 1 byte is enough
+        // SAFETY: msg_buffer has enough space
+        unsafe {
+            msg_buffer.push_unchecked(transaction.instructions.len() as u8);
+        };
+
+        let mut compiled_instruction: heapless::Vec<u8, 1100> = heapless::Vec::new();
+        for instruction in transaction.instructions.iter() {
+            // find position of program_id in static_account_keys
+            let position = static_account_keys
+                .iter()
+                .position(|k| k == &instruction.program_id)
+                .unwrap(); // always exists
+
+            compiled_instruction
+                .push(position as u8)
+                .map_err(|_| SdkError::TransactionTooLarge)?;
+
+            // number of accounts is less then 128, so 1 byte is enough
+            compiled_instruction
+                .push(instruction.accounts.len() as u8)
+                .map_err(|_| SdkError::TransactionTooLarge)?;
+
+            for account_meta in instruction.accounts.iter() {
+                let key = account_meta.pubkey;
+                // find position in static_account_keys
+                let position = static_account_keys.iter().position(|k| k == &key).unwrap(); // always exists
+
+                compiled_instruction
+                    .push(position as u8)
+                    .map_err(|_| SdkError::TransactionTooLarge)?;
+            }
+
+            // size of data
+            let data_len = instruction.data.len();
+            if data_len < 128 {
+                compiled_instruction
+                    .push(data_len as u8)
+                    .map_err(|_| SdkError::TransactionTooLarge)?;
+            } else {
+                compiled_instruction
+                    .push(data_len as u8)
+                    .map_err(|_| SdkError::TransactionTooLarge)?;
+                compiled_instruction
+                    .push((data_len >> 7) as u8)
+                    .map_err(|_| SdkError::TransactionTooLarge)?;
+            }
+            compiled_instruction
+                .extend_from_slice(&instruction.data)
+                .map_err(|_| SdkError::TransactionTooLarge)?;
+
+            msg_buffer
+                .extend_from_slice(&compiled_instruction)
+                .map_err(|_| SdkError::TransactionTooLarge)?;
+
+            compiled_instruction.clear();
+        }
+
+        // sign message
+        let mut transaction_bytes: heapless::Vec<u8, 1232> = heapless::Vec::new();
+
+        // SAFETY: sig_buffer is empty
+        unsafe {
+            transaction_bytes.push_unchecked(transaction.signers.len() as u8);
+        }
+
+        for signer in transaction.signers.iter() {
+            let signature = signer.sign_message(msg_buffer.as_slice(), None);
+            transaction_bytes
+                .extend_from_slice(signature.as_ref())
+                .map_err(|_| SdkError::TransactionTooLarge)?;
+        }
+
+        transaction_bytes
+            .extend_from_slice(msg_buffer.as_slice())
+            .map_err(|_| SdkError::TransactionTooLarge)?;
+
+        // send transaction
+        let mut json_body: heapless::Vec<u8, 4096> = heapless::Vec::new();
+        let _ = json_body.extend_from_slice(
+            br#"{"jsonrpc":"2.0","id":1,"method":"sendTransaction","params":[""#,
+        );
+        let transaction_base64_max_len = (transaction_bytes.len() * 4 / 3) + 4;
+        let current_len = json_body.len();
+        let _ = json_body.resize_default(transaction_base64_max_len + current_len);
+
+        // get slice from empty space
+        let mut transaction_base64 =
+            &mut json_body[current_len..transaction_base64_max_len + current_len];
+
+        let bytes_written = base64::engine::general_purpose::STANDARD
+            .encode_slice(transaction_bytes.as_slice(), &mut transaction_base64)
+            .unwrap();
+        json_body.truncate(current_len + bytes_written);
+
+        let _ = json_body.push(b'"');
+        let _ = json_body.extend_from_slice(br#",{"encoding":"base64"}]}"#);
+
+        let mut resp_buffer = [0u8; 4096];
+        let response = self
+            .client
+            .post_json(self.url, json_body.as_slice(), resp_buffer.as_mut_slice())
+            .await?;
+
+        Self::extract_signature(&response)
     }
 }
 

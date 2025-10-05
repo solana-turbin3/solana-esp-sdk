@@ -12,26 +12,29 @@ crate-type = ["rlib"]
 
 [features]
 # Default to minimal `no_std` (no features enabled)
-default = ["net-reqwless", "crypto"]
+default = ["net-reqwless"]
 # Enable std for host-side testing and the host-demo example.
-std = ["dep:bs58", "dep:ureq"]
+# std = ["dep:bs58", "dep:ureq"]
 # Optional TLS / RPC helpers (off by default for minimal size)
 tls = []
-crypto = ["dep:ed25519-compact", "dep:rand_core"]
+# crypto = ["dep:ed25519-compact", "dep:rand_core"]
+# crypto = ["dep:ed25519-compact"]
 net-reqwless = ["dep:reqwless", "dep:embedded-nal-async"]
 
 
 [dependencies]
-base64 = { workspace = true }
-ed25519-compact = { workspace = true, default-features = false, optional = true }
-rand_core = { workspace = true, optional = true }
-bs58 = { version = "0.5", optional = true }
-ureq = { version = "2", optional = true }
+# base64 = { workspace = true }
+ed25519-compact = { workspace = true, default-features = false }
+# rand_core = { workspace = true, optional = true }
+# bs58 = { version = "0.5", optional = true }
+# ureq = { version = "2", optional = true }
 five8 = "1.0.0"
 reqwless = { version = "0.13.0", default-features = false, features = [
     "embedded-tls",
 ], optional = true }
 embedded-nal-async = { version = "0.8.0", optional = true }
+heapless = "0.9.1"
+base64 = { version = "0.22", default-features = false }
 
 
 [dev-dependencies]

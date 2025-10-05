@@ -8,11 +8,18 @@ pub const HASH_BYTES: usize = 32;
 /// Maximum string length of a base58 encoded hash.
 pub const MAX_BASE58_LEN: usize = 44;
 
+#[derive(Default)]
 pub struct Hash(pub(crate) [u8; HASH_BYTES]);
 
 impl From<[u8; HASH_BYTES]> for Hash {
     fn from(from: [u8; 32]) -> Self {
         Self(from)
+    }
+}
+
+impl AsRef<[u8]> for Hash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0[..]
     }
 }
 

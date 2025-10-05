@@ -20,6 +20,7 @@ compile_error!("feature `tx` requires `instr` (instruction builders) to be enabl
 pub mod types;
 
 pub mod hash;
+pub mod signature;
 
 // Optional lightweight codecs (uleb128, base64, optional base58/json)
 #[cfg(feature = "codecs")]
@@ -30,8 +31,8 @@ pub mod codecs;
 // Instruction builders (opt-in)
 // ─────────────────────────────────────────────────────────────
 
-#[cfg(feature = "instr")]
-#[cfg_attr(docsrs, doc(cfg(feature = "instr")))]
+// #[cfg(feature = "instr")]
+// #[cfg_attr(docsrs, doc(cfg(feature = "instr")))]
 pub mod instruction;
 
 #[cfg(feature = "spl-token")]
@@ -42,8 +43,8 @@ pub mod spl;
 // Crypto (keys + signing) (opt-in)
 // ─────────────────────────────────────────────────────────────
 
-#[cfg(feature = "crypto")]
-#[cfg_attr(docsrs, doc(cfg(feature = "crypto")))]
+// #[cfg(feature = "crypto")]
+// #[cfg_attr(docsrs, doc(cfg(feature = "crypto")))]
 pub mod crypto;
 
 // ─────────────────────────────────────────────────────────────
@@ -54,8 +55,8 @@ pub mod crypto;
 #[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
 pub mod message;
 
-#[cfg(feature = "tx")]
-#[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
+// #[cfg(feature = "tx")]
+// #[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
 pub mod transaction;
 
 // ─────────────────────────────────────────────────────────────
@@ -94,13 +95,13 @@ pub mod prelude {
     pub use crate::types::{Result, SdkError};
 
     // Crypto (keys + signing)
-    #[cfg(feature = "crypto")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "crypto")))]
+    // #[cfg(feature = "crypto")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "crypto")))]
     pub use crate::crypto::*;
 
     // Instruction builders
-    #[cfg(feature = "instr")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "instr")))]
+    // #[cfg(feature = "instr")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "instr")))]
     pub use crate::instruction::*;
 
     // SPL-Token helpers
@@ -112,8 +113,8 @@ pub mod prelude {
     #[cfg(feature = "tx")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
     pub use crate::message::*;
-    #[cfg(feature = "tx")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
+    // #[cfg(feature = "tx")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "tx")))]
     pub use crate::transaction::*;
 
     // RPC trait + helpers

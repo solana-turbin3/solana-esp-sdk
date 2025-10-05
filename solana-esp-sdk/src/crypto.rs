@@ -1,8 +1,8 @@
-use core::ops::Deref;
+use core::{fmt, ops::Deref, str::from_utf8_unchecked};
 
 use ed25519_compact::{KeyPair as Ed25519CompactKeyPair, Noise, PublicKey, Seed, Signature};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
 pub struct Pubkey([u8; 32]);
 
@@ -37,6 +37,20 @@ impl AsRef<Pubkey> for [u8; 32] {
         // SAFETY: Pubkey is a newtype around [u8; 32], so this is safe.
         unsafe { &*(self as *const [u8; 32] as *const Pubkey) }
     }
+}
+
+impl fmt::Display for Pubkey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write_as_base58(f, self)
+    }
+}
+
+fn write_as_base58(f: &mut fmt::Formatter, h: &Pubkey) -> fmt::Result {
+    let mut out = [0u8; 44];
+    let len = five8::encode_32(&h.0, &mut out) as usize;
+    // any sequence of base58 chars is valid utf8
+    let as_str = unsafe { from_utf8_unchecked(&out[..len]) };
+    f.write_str(as_str)
 }
 
 pub struct Keypair(Ed25519CompactKeyPair);

@@ -10,6 +10,7 @@ pub enum SdkError {
     Unsupported,
     NetworkError,
     ResponseParseError,
+    TransactionTooLarge,
 }
 
 pub type Result<T> = core::result::Result<T, SdkError>;

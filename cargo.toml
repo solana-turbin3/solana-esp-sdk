@@ -3,6 +3,7 @@ members = [
     "solana-esp-sdk",
     # "examples/esp32s3-demo",
     "examples/esp32-get-latest-blockhash-async",
+    "examples/esp32-transfer-sol",
 ]
 resolver = "2"
 
