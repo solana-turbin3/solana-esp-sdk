@@ -14,20 +14,15 @@ crate-type = ["rlib"]
 # Default to minimal `no_std` (no features enabled)
 default = ["net-reqwless"]
 # Enable std for host-side testing and the host-demo example.
-# std = ["dep:bs58", "dep:ureq"]
+std = []
 # Optional TLS / RPC helpers (off by default for minimal size)
 tls = []
-# crypto = ["dep:ed25519-compact", "dep:rand_core"]
-# crypto = ["dep:ed25519-compact"]
 net-reqwless = ["dep:reqwless", "dep:embedded-nal-async"]
+net-smoltcp = []
 
 
 [dependencies]
-# base64 = { workspace = true }
 ed25519-compact = { workspace = true, default-features = false }
-# rand_core = { workspace = true, optional = true }
-# bs58 = { version = "0.5", optional = true }
-# ureq = { version = "2", optional = true }
 five8 = "1.0.0"
 reqwless = { version = "0.13.0", default-features = false, features = [
     "embedded-tls",
@@ -38,7 +33,6 @@ base64 = { version = "0.22", default-features = false }
 
 
 [dev-dependencies]
-# (none for now)
 
 
 [package.metadata.docs.rs]
