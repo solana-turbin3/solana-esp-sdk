@@ -163,6 +163,19 @@ async fn main(spawner: Spawner) {
         Err(e) => println!("Error: {:?}", e),
     }
 
+    // let pubkey = "ALcEQcnFpwij9xBKmUuz8QAyQkwtVDxhhvrogS9VGY3P";
+
+    // let mut data_buffer = [0; 200];
+    // let mut resp_buffer = [0; 2048];
+
+    // let data = rpc
+    //     .get_data(pubkey, &mut data_buffer, &mut resp_buffer)
+    //     .await;
+    // match data {
+    //     Ok(data) => println!("data: {:?}", data),
+    //     Err(e) => println!("Error: {:?}", e),
+    // }
+
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0-rc.0/examples/src/bin
 }
 

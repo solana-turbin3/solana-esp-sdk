@@ -117,6 +117,24 @@ impl<'a, C> RpcClient<'a, C> {
             .map_err(|_| SdkError::ResponseParseError)?;
         Ok(Signature::from(sig_bytes))
     }
+
+    fn extract_data<'buf>(json: &[u8], data_buffer: &'buf mut [u8]) -> Result<&'buf [u8]> {
+        let result_prefix = br#""value":{"data":[""#;
+        let start = json
+            .windows(result_prefix.len())
+            .position(|w| w == result_prefix)
+            .ok_or(SdkError::ResponseParseError)?
+            + result_prefix.len();
+        let end = json[start..]
+            .iter()
+            .position(|&c| c == b'"')
+            .ok_or(SdkError::ResponseParseError)?
+            + start;
+        let data = &json[start..end];
+        let len = base64::engine::general_purpose::STANDARD.decode_slice(data, data_buffer)
+            .map_err(|_| SdkError::ResponseParseError)?;
+        Ok(&data_buffer[..len])
+    }
 }
 
 impl<'a, C: AsyncClient> RpcClient<'a, C> {
@@ -327,6 +345,32 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
             .await?;
 
         Self::extract_signature(&response)
+    }
+
+    pub async fn get_data<'buf>(
+        &self,
+        pubkey_b58: &str,
+        data_buffer: &'buf mut [u8],
+        resp_buffer: &'buf mut [u8],
+    ) -> Result<&'buf [u8]> {
+        let mut json_body: heapless::Vec<u8, 2048> = heapless::Vec::new();
+        let _ = json_body
+            .extend_from_slice(br#"{"jsonrpc":"2.0","id":1,"method":"getAccountInfo","params":[""#);
+        let _ = json_body.extend_from_slice(pubkey_b58.as_bytes());
+        let _ = json_body.extend_from_slice(br#"",{"commitment":"#);
+        let _ = json_body.extend_from_slice(match self.commitment {
+            Commitment::Processed => br#""processed""#,
+            Commitment::Confirmed => br#""confirmed""#,
+            Commitment::Finalized => br#""finalized""#,
+        });
+        let _ = json_body.extend_from_slice(br#","encoding":"base64"}]}"#);
+        let reponse = self
+            .client
+            .post_json(self.url, json_body.as_slice(), resp_buffer)
+            .await?;
+
+        // Ok(reponse)
+        Self::extract_data(reponse, data_buffer)
     }
 }
 
