@@ -4,11 +4,11 @@ use ed25519_compact::{KeyPair as Ed25519CompactKeyPair, Noise, PublicKey, Seed, 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(transparent)]
-pub struct Pubkey([u8; 32]);
+pub struct Address([u8; 32]);
 
-impl Pubkey {
-    pub fn new(pubkey: [u8; 32]) -> Pubkey {
-        Pubkey(pubkey)
+impl Address {
+    pub fn new(address: [u8; 32]) -> Address {
+        Address(address)
     }
 
     pub fn verify_signature(&self, message: impl AsRef<[u8]>, sig: &[u8; 64]) -> bool {
@@ -18,13 +18,13 @@ impl Pubkey {
     }
 }
 
-impl AsRef<[u8; 32]> for Pubkey {
+impl AsRef<[u8; 32]> for Address {
     fn as_ref(&self) -> &[u8; 32] {
         &self.0
     }
 }
 
-impl Deref for Pubkey {
+impl Deref for Address {
     type Target = [u8; 32];
 
     fn deref(&self) -> &Self::Target {
@@ -32,20 +32,20 @@ impl Deref for Pubkey {
     }
 }
 
-impl AsRef<Pubkey> for [u8; 32] {
-    fn as_ref(&self) -> &Pubkey {
-        // SAFETY: Pubkey is a newtype around [u8; 32], so this is safe.
-        unsafe { &*(self as *const [u8; 32] as *const Pubkey) }
+impl AsRef<Address> for [u8; 32] {
+    fn as_ref(&self) -> &Address {
+        // SAFETY: Address is a newtype around [u8; 32], so this is safe.
+        unsafe { &*(self as *const [u8; 32] as *const Address) }
     }
 }
 
-impl fmt::Display for Pubkey {
+impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write_as_base58(f, self)
     }
 }
 
-fn write_as_base58(f: &mut fmt::Formatter, h: &Pubkey) -> fmt::Result {
+fn write_as_base58(f: &mut fmt::Formatter, h: &Address) -> fmt::Result {
     let mut out = [0u8; 44];
     let len = five8::encode_32(&h.0, &mut out) as usize;
     // any sequence of base58 chars is valid utf8
@@ -69,7 +69,7 @@ impl Keypair {
     //     &self.0.pk
     // }
 
-    pub fn public_key(&self) -> &Pubkey {
+    pub fn public_key(&self) -> &Address {
         self.0.pk.as_ref()
     }
 
@@ -80,16 +80,3 @@ impl Keypair {
         *self.0.sk.sign(message, noise.map(|n| Noise::new(n)))
     }
 }
-
-/*
-/// Generate a keypair using device RNG (HAL on ESP, OsRng on host).
-pub fn keypair_generate<R: rand_core::RngCore + rand_core::CryptoRng>(rng: &mut R) -> Keypair {
-    /* TODO */
-}
-
-/// (Host-only) Convert a pubkey to base58 for debugging.
-#[cfg(feature = "std")]
-pub fn debug_pubkey_b58(pk: &solana_program::pubkey::Pubkey) -> alloc::string::String {
-    /* TODO */
-}
-*/

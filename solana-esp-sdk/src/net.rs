@@ -20,7 +20,12 @@ pub struct ReqwlessAsyncClient<T: TcpConnect, D: Dns> {
 
 #[cfg(feature = "net-reqwless")]
 impl<T: TcpConnect, D: Dns> AsyncClient for ReqwlessAsyncClient<T, D> {
-    async fn post_json<'a>(&self, url: &str, json_body: &[u8], resp_buffer: &'a mut [u8]) -> Result<&'a [u8]> {
+    async fn post_json<'a>(
+        &self,
+        url: &str,
+        json_body: &[u8],
+        resp_buffer: &'a mut [u8],
+    ) -> Result<&'a [u8]> {
         let mut rx_buffer = [0; 4096];
         let mut tx_buffer = [0; 4096];
 

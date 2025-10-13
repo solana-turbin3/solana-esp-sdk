@@ -19,7 +19,7 @@ use esp_println as _;
 use esp_println::println; //
 use esp_wifi::wifi::{self, WifiController, WifiDevice, WifiEvent, WifiState}; //
 use esp_wifi::EspWifiController;
-use solana_esp_sdk::crypto::{Keypair, Pubkey};
+use solana_esp_sdk::crypto::{Address, Keypair};
 use solana_esp_sdk::hash::Hash;
 //
 use solana_esp_sdk::net::ReqwlessAsyncClient;
@@ -127,17 +127,17 @@ async fn main(spawner: Spawner) {
 
     println!("keypair_pubkey: {}", keypair_pubkey);
 
-    let system_program_id = Pubkey::new([0; 32]);
+    let system_program_id = Address::new([0; 32]);
 
-    let to_pubkey = Pubkey::new([
+    let to_address = Address::new([
         160, 129, 7, 170, 83, 212, 101, 228, 89, 56, 29, 12, 167, 106, 199, 150, 128, 228, 115, 53,
         77, 79, 132, 139, 127, 102, 145, 110, 234, 82, 85, 138,
     ]);
 
-    println!("to_pubkey: {}", to_pubkey);
+    println!("to_address: {}", to_address);
 
     let from_account = AccountMeta::new_writable(&keypair_pubkey, true);
-    let to_account = AccountMeta::new_writable(&to_pubkey, false);
+    let to_account = AccountMeta::new_writable(&to_address, false);
 
     let lamports: u64 = 1000;
 
@@ -163,13 +163,13 @@ async fn main(spawner: Spawner) {
         Err(e) => println!("Error: {:?}", e),
     }
 
-    // let pubkey = "ALcEQcnFpwij9xBKmUuz8QAyQkwtVDxhhvrogS9VGY3P";
+    // let address = "ALcEQcnFpwij9xBKmUuz8QAyQkwtVDxhhvrogS9VGY3P";
 
     // let mut data_buffer = [0; 200];
     // let mut resp_buffer = [0; 2048];
 
     // let data = rpc
-    //     .get_data(pubkey, &mut data_buffer, &mut resp_buffer)
+    //     .get_data(address, &mut data_buffer, &mut resp_buffer)
     //     .await;
     // match data {
     //     Ok(data) => println!("data: {:?}", data),

@@ -1,5 +1,5 @@
-use std::fs;
 use std::env;
+use std::fs;
 use std::path::Path;
 
 fn main() {
@@ -24,10 +24,13 @@ fn main() {
 
     std::io::Write::write_all(
         &mut f,
-        format!("pub const PRIVATE_KEY: [u8; 64] = {};\n", format!("{:?}", numbers)).as_bytes(),
+        format!(
+            "pub const PRIVATE_KEY: [u8; 64] = {};\n",
+            format!("{:?}", numbers)
+        )
+        .as_bytes(),
     )
     .unwrap();
-
 
     linker_be_nice();
     println!("cargo:rustc-link-arg=-Tdefmt.x");

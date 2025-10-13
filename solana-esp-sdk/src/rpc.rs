@@ -3,7 +3,7 @@ use core::future::Future;
 use base64::Engine;
 
 use crate::{
-    crypto::Pubkey,
+    crypto::Address,
     hash::Hash,
     signature::Signature,
     transaction::Transaction,
@@ -131,7 +131,8 @@ impl<'a, C> RpcClient<'a, C> {
             .ok_or(SdkError::ResponseParseError)?
             + start;
         let data = &json[start..end];
-        let len = base64::engine::general_purpose::STANDARD.decode_slice(data, data_buffer)
+        let len = base64::engine::general_purpose::STANDARD
+            .decode_slice(data, data_buffer)
             .map_err(|_| SdkError::ResponseParseError)?;
         Ok(&data_buffer[..len])
     }
@@ -162,7 +163,7 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
         }
 
         // get map of all accounts
-        let mut keys_meta_map: heapless::LinearMap<&Pubkey, KeyMetadata, 35> =
+        let mut keys_meta_map: heapless::LinearMap<&Address, KeyMetadata, 35> =
             heapless::LinearMap::new();
         for instruction in transaction.instructions.iter() {
             // program cannot be writable or signer so it is safe to overwrite
@@ -174,14 +175,14 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
                 },
             );
             for account_meta in instruction.accounts.iter() {
-                let key_meta = keys_meta_map.get_mut(account_meta.pubkey);
+                let key_meta = keys_meta_map.get_mut(account_meta.address);
                 if let Some(key_meta) = key_meta {
                     key_meta.is_writable |= account_meta.is_writable;
                     key_meta.is_signer |= account_meta.is_signer;
                     continue;
                 }
                 let _ = keys_meta_map.insert(
-                    account_meta.pubkey,
+                    account_meta.address,
                     KeyMetadata {
                         is_signer: account_meta.is_signer,
                         is_writable: account_meta.is_writable,
@@ -190,11 +191,11 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
             }
         }
 
-        let mut writable_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
-        let mut readonly_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
-        let mut writable_non_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
-        let mut readonly_non_signer_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
-        let mut static_account_keys: heapless::Vec<&Pubkey, 35> = heapless::Vec::new();
+        let mut writable_signer_keys: heapless::Vec<&Address, 35> = heapless::Vec::new();
+        let mut readonly_signer_keys: heapless::Vec<&Address, 35> = heapless::Vec::new();
+        let mut writable_non_signer_keys: heapless::Vec<&Address, 35> = heapless::Vec::new();
+        let mut readonly_non_signer_keys: heapless::Vec<&Address, 35> = heapless::Vec::new();
+        let mut static_account_keys: heapless::Vec<&Address, 35> = heapless::Vec::new();
 
         for (key, meta) in keys_meta_map.iter() {
             if meta.is_writable {
@@ -264,7 +265,7 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
                 .map_err(|_| SdkError::TransactionTooLarge)?;
 
             for account_meta in instruction.accounts.iter() {
-                let key = account_meta.pubkey;
+                let key = account_meta.address;
                 // find position in static_account_keys
                 let position = static_account_keys.iter().position(|k| k == &key).unwrap(); // always exists
 
@@ -349,14 +350,14 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
 
     pub async fn get_data<'buf>(
         &self,
-        pubkey_b58: &str,
+        address_b58: &str,
         data_buffer: &'buf mut [u8],
         resp_buffer: &'buf mut [u8],
     ) -> Result<&'buf [u8]> {
         let mut json_body: heapless::Vec<u8, 2048> = heapless::Vec::new();
         let _ = json_body
             .extend_from_slice(br#"{"jsonrpc":"2.0","id":1,"method":"getAccountInfo","params":[""#);
-        let _ = json_body.extend_from_slice(pubkey_b58.as_bytes());
+        let _ = json_body.extend_from_slice(address_b58.as_bytes());
         let _ = json_body.extend_from_slice(br#"",{"commitment":"#);
         let _ = json_body.extend_from_slice(match self.commitment {
             Commitment::Processed => br#""processed""#,
@@ -373,43 +374,3 @@ impl<'a, C: AsyncClient> RpcClient<'a, C> {
         Self::extract_data(reponse, data_buffer)
     }
 }
-
-/*
-impl<'a, C: SyncClient> Rpc<'a, C> {
-    /// Fetch latest blockhash for transaction building.
-    pub fn get_latest_blockhash(&self) -> Result<solana_program::hash::Hash> { /* TODO */ }
-
-    /// Submit a base64-encoded transaction; return signature string.
-    pub fn send_transaction_base64(&self, b64_tx: &str) -> Result<alloc::string::String> { /* TODO */ }
-
-    /// Read account lamports only (lighter than full getAccountInfo parse).
-    pub fn get_balance(&self, pubkey_b58: &str) -> Result<u64> { /* TODO */ }
-
-    /// Read full account info (owner, lamports, data base64) – heavier path.
-    pub fn get_account_info_raw(&self, pubkey_b58: &str) -> Result<alloc::string::String> { /* TODO */ }
-}
-*/
-/*
-/// Build the JSON for getLatestBlockhash (optionally with a commitment param).
-// pub fn json_get_latest_blockhash() -> alloc::string::String { /* TODO */
-// }
-
-/// Build the JSON for sendTransaction (b64 payload).
-// pub fn json_send_transaction(b64: &str) -> alloc::string::String { /* TODO */
-// }
-
-/// Build the JSON for getBalance(pubkey).
-// pub fn json_get_balance(pubkey_b58: &str) -> alloc::string::String { /* TODO */
-// }
-
-/// (std) Parse getLatestBlockhash response to 32-byte Hash.
-#[cfg(feature = "std")]
-pub fn parse_blockhash_from_response(json: &str) -> Result<solana_program::hash::Hash> {
-    /* TODO */
-}
-
-/// (std) Parse getBalance response to u64.
-#[cfg(feature = "std")]
-pub fn parse_balance_from_response(json: &str) -> Result<u64> { /* TODO */
-}
- */
